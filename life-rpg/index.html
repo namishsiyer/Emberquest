@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmberQuest — Gamified Life Progress & RPG Habit Tracker</title>
+  <meta name="description" content="Level up your real life! Track workouts, running, studying, MCQs, diet, and reflections with an evolving pixel hero, radar analytics, and RPG boss raids.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Confetti Canvas for Level Up & Boss Victory -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="app-container">
+    <!-- ==================== HUD HEADER ==================== -->
+    <header class="hud-header" id="hud-header">
+      <div class="hud-profile-left">
+        <div class="hero-avatar-mini" id="hud-avatar-mini" title="Click to edit profile">
+          🧙
+        </div>
+        <div class="hero-meta">
+          <div class="hero-name-row">
+            <h1 class="hero-name" id="hud-hero-name">Hero</h1>
+            <span class="rank-badge" id="hud-rank-badge">Rookie</span>
+          </div>
+          <div class="hero-submeta">
+            <span class="streak-chip" id="hud-streak">🔥 0 Days</span>
+            <span class="shield-chip" id="hud-shields">🛡️ 1 Shield</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-xp-center">
+        <div class="xp-label-row">
+          <span class="level-tag" id="hud-level-tag">LVL 1</span>
+          <span class="xp-count" id="hud-xp-count"><strong>0</strong> / 250 XP</span>
+        </div>
+        <div class="xp-track">
+          <div class="xp-fill" id="hud-xp-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="hud-controls-right">
+        <button type="button" class="icon-btn" id="btn-guide" title="Adventurer's Guide (How to Play)">
+          📖
+        </button>
+        <button type="button" class="icon-btn" id="btn-open-quitter" title="Bad Habit Quitter">
+          🚭
+        </button>
+        <button type="button" class="icon-btn" id="btn-open-achievements" title="Life Achievements (Hall of Fame)">
+          🏆
+        </button>
+        <button type="button" class="icon-btn active" id="btn-sound-toggle" title="Toggle Sound Effects">
+          🔊
+        </button>
+        <button type="button" class="icon-btn" id="btn-profile-edit" title="Edit Profile & Character">
+          ⚙️
+        </button>
+        <button type="button" class="icon-btn" id="btn-data-manage" title="Data Backup & Restore">
+          💾
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== HERO STAGE SECTION ==================== -->
+    <section class="hero-stage-section" aria-label="Hero Stage">
+      <!-- Character Canvas Card -->
+      <div class="hero-canvas-card">
+        <div class="speech-bubble" id="hero-speech">
+          "Ready to conquer today's grind? Let's get moving!"
+        </div>
+
+        <div class="canvas-wrapper" id="hero-canvas-wrap" title="Click hero to interact!">
+          <canvas id="hero-canvas" width="384" height="360"></canvas>
+        </div>
+        <div class="click-hint">Click hero to interact or trigger poses below</div>
+
+        <div class="hero-action-pills">
+          <button type="button" class="hero-pill-btn" data-pose="flex">💪 Flex</button>
+          <button type="button" class="hero-pill-btn" data-pose="run">🏃 Jog</button>
+          <button type="button" class="hero-pill-btn" data-pose="press">🏋️ Lift</button>
+          <button type="button" class="hero-pill-btn" data-pose="read">📖 Read</button>
+          <button type="button" class="hero-pill-btn" data-pose="jump">⚡ Jump</button>
+          <button type="button" class="hero-pill-btn" data-pose="wave">👋 Wave</button>
+        </div>
+      </div>
+
+      <!-- Hero Body Stats & Physique -->
+      <div class="body-stats-card">
+        <div>
+          <div class="body-stats-header">
+            <h2 class="section-title"><span class="ico">🧬</span> Character Morphology</h2>
+            <span class="physique-pill" id="body-physique-badge">Average</span>
+          </div>
+
+          <div class="body-sliders-wrap">
+            <div class="stat-box">
+              <div class="stat-box-title">
+                <span>Muscle Tone</span>
+                <strong id="stat-fit-val">30%</strong>
+              </div>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fit-fill" id="stat-fit-fill" style="width: 30%;"></div>
+              </div>
+              <div class="stat-caption">Grows with workouts & running</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-box-title">
+                <span>Body Fat</span>
+                <strong id="stat-fat-val">20%</strong>
+              </div>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fat-fill" id="stat-fat-fill" style="width: 20%;"></div>
+              </div>
+              <div class="stat-caption">Increases with junk food & inactivity</div>
+            </div>
+          </div>
+
+          <div class="physique-tip-box" id="body-physique-tip">
+            Work out regularly to build muscle and reduce fat.
+          </div>
+        </div>
+
+        <div class="gear-showcase">
+          <div class="gear-showcase-title">Hero Gear Unlocked</div>
+          <div class="gear-items-row" id="gear-items-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MAIN DASHBOARD LAYOUT ==================== -->
+    <main class="dashboard-grid">
+      <!-- LEFT COLUMN -->
+      <div class="dash-col">
+        <!-- Quick Activity Logger -->
+        <section class="dash-card" aria-label="Activity Tracking">
+          <div class="card-top-row">
+            <h2 class="section-title"><span class="ico">⚡</span> Daily Activity Log</h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" class="chip-btn" id="btn-open-add-act" style="background: rgba(255, 122, 26, 0.15); border-color: var(--orange-500); color: #fff;">
+                ➕ Add Activity
+              </button>
+              <span class="card-badge">Instant XP</span>
+            </div>
+          </div>
+          <div class="activity-log-list" id="activity-list">
+            <!-- Dynamically populated from ACT definitions in logic.js -->
+          </div>
+        </section>
+
+        <!-- Focus Stopwatch / Study Timer -->
+        <section class="focus-timer-card" aria-label="Focus Timer">
+          <div>
+            <div class="timer-display-box">
+              <span class="timer-digits" id="timer-display">00:00:00</span>
+              <span class="timer-label">Deep Study Timer</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              Timer time converts directly to Study XP when logged!
+            </div>
+          </div>
+          <div class="timer-btn-row">
+            <button type="button" class="btn-log" id="btn-timer-toggle">Start</button>
+            <button type="button" class="chip-btn" id="btn-timer-reset">Reset</button>
+            <button type="button" class="chip-btn" id="btn-timer-log">Log Session</button>
+          </div>
+        </section>
+
+        <!-- Daily Quests -->
+        <section class="dash-card" aria-label="Daily Quests">
+          <div class="card-top-row">
+            <h2 class="section-title"><span class="ico">📜</span> Daily Quests</h2>
+            <span class="card-badge" id="quests-clear-badge">0/7 Complete</span>
+          </div>
+          <div class="quests-list" id="quests-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="dash-col">
+        <!-- Weekly Boss Raid -->
+        <section class="dash-card boss-card" aria-label="Weekly Boss Raid">
+          <div class="boss-top">
+            <div class="boss-avatar" id="boss-ico">👾</div>
+            <div class="boss-info">
+              <div class="boss-name" id="boss-name">Procrastination Slime</div>
+              <div class="boss-title" id="boss-title">The Lethargy Lurker</div>
+            </div>
+            <div class="rank-badge" id="boss-reward-badge">+200 XP</div>
+          </div>
+
+          <div class="boss-hp-track">
+            <div class="boss-hp-fill" id="boss-hp-fill" style="width: 100%;"></div>
+          </div>
+
+          <div class="boss-meta-row">
+            <span id="boss-hp-text">HP: 600 / 600</span>
+            <span id="boss-days-left">6 days remaining</span>
+          </div>
+        </section>
+
+        <!-- Radar Chart -->
+        <section class="dash-card" aria-label="Life Balance Radar">
+          <div id="radar-chart-container">
+            <!-- Rendered by radar.js -->
+          </div>
+        </section>
+
+        <!-- Level Challenges -->
+        <section class="dash-card" aria-label="Level Challenges">
+          <div class="card-top-row">
+            <h2 class="section-title"><span class="ico">🏆</span> Level Challenges</h2>
+            <span class="card-badge" id="ch-active-count">Active</span>
+          </div>
+          <div class="challenges-grid" id="challenges-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- Daily Reflection Diary -->
+        <section class="dash-card" aria-label="Daily Diary">
+          <div class="card-top-row">
+            <h2 class="section-title"><span class="ico">📓</span> Daily Diary</h2>
+            <span class="card-badge">+20 XP Daily</span>
+          </div>
+
+          <form id="diary-form" class="diary-input-box">
+            <textarea class="diary-textarea" id="diary-input" placeholder="What did you achieve today? Reflect on your progress, challenges, or thoughts..." maxlength="300"></textarea>
+            <div class="diary-bottom-row">
+              <div class="mood-select-row" id="mood-selector">
+                <button type="button" class="mood-btn selected" data-mood="fire" title="Fired Up">🔥</button>
+                <button type="button" class="mood-btn" data-mood="bolt" title="Productive">⚡</button>
+                <button type="button" class="mood-btn" data-mood="ok" title="Balanced">😌</button>
+                <button type="button" class="mood-btn" data-mood="tired" title="Exhausted">😴</button>
+                <button type="button" class="mood-btn" data-mood="stress" title="Stressed">🌪️</button>
+              </div>
+              <button type="submit" class="btn-save-diary">Save Note</button>
+            </div>
+          </form>
+
+          <div class="diary-history" id="diary-entries-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- Ghost Rivals Leaderboard -->
+        <section class="dash-card" aria-label="Weekly Leaderboard">
+          <div class="card-top-row">
+            <h2 class="section-title"><span class="ico">👑</span> Weekly League</h2>
+            <span class="card-badge">Ghost Rivals</span>
+          </div>
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">Rank</th>
+                <th>Hero</th>
+                <th style="text-align: right;">Weekly XP</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+  <!-- Onboarding & Profile Modal -->
+  <div class="modal-backdrop" id="modal-profile">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="profile-modal-title">Create Your Hero</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-profile">&times;</button>
+      </div>
+      <form id="profile-form">
+        <div class="form-group">
+          <label class="form-label" for="profile-name">Hero Name</label>
+          <input type="text" id="profile-name" class="form-input" placeholder="e.g. ShadowHunter, Alex" required maxlength="20">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-age">Your Age</label>
+          <input type="number" id="profile-age" class="form-input" placeholder="e.g. 21" min="8" max="100" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Skin Tone</label>
+          <div class="customizer-options" id="skin-options">
+            <button type="button" class="color-swatch-btn selected" data-skin="0" style="background-color: #f3c9a3;" title="Light"></button>
+            <button type="button" class="color-swatch-btn" data-skin="1" style="background-color: #e2a878;" title="Tan"></button>
+            <button type="button" class="color-swatch-btn" data-skin="2" style="background-color: #b97b4f;" title="Bronze"></button>
+            <button type="button" class="color-swatch-btn" data-skin="3" style="background-color: #7c4b2e;" title="Deep"></button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Hair Color</label>
+          <div class="customizer-options" id="hair-options">
+            <button type="button" class="color-swatch-btn selected" data-hair="0" style="background-color: #2d2622;" title="Black"></button>
+            <button type="button" class="color-swatch-btn" data-hair="1" style="background-color: #7a4422;" title="Brown"></button>
+            <button type="button" class="color-swatch-btn" data-hair="2" style="background-color: #e3b84f;" title="Blond"></button>
+            <button type="button" class="color-swatch-btn" data-hair="3" style="background-color: #e2551f;" title="Ginger"></button>
+            <button type="button" class="color-swatch-btn" data-hair="4" style="background-color: #d9d4ca;" title="Silver"></button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary-block" id="btn-save-profile">Embark on Quest</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Level Up Modal -->
+  <div class="modal-backdrop" id="modal-levelup">
+    <div class="modal-content levelup-modal-box">
+      <div class="levelup-icon-anim">🌟</div>
+      <div class="levelup-badge-lg" id="levelup-title">LEVEL UP!</div>
+      <div class="levelup-desc" id="levelup-msg">You have reached Level 2!</div>
+      <div class="unlocked-gear-box" id="levelup-gear-box" style="display: none;">
+        <div style="font-size: 11px; font-weight: bold; color: var(--gold); margin-bottom: 4px;">NEW GEAR UNLOCKED:</div>
+        <div id="levelup-gear-name" style="font-size: 14px; font-weight: 700; color: #fff;">Sweatband</div>
+      </div>
+      <button type="button" class="btn-primary-block" id="btn-claim-levelup">Claim & Continue</button>
+    </div>
+  </div>
+
+  <!-- Data Backup & Reset Modal -->
+  <div class="modal-backdrop" id="modal-data">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Data Management</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-data">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <button type="button" class="btn-primary-block" id="btn-export-json">📥 Export Save Data (JSON)</button>
+        <label class="chip-btn" style="text-align: center; padding: 10px; display: block; cursor: pointer;">
+          📤 Import Save Data (JSON)
+          <input type="file" id="file-import-json" accept=".json" style="display: none;">
+        </label>
+        <button type="button" class="chip-btn" id="btn-reset-game" style="color: var(--red-danger); border-color: rgba(239, 68, 68, 0.4); margin-top: 10px;">
+          ⚠️ Reset All Game Progress
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Activity Analytics & 7-Day Trend Modal -->
+  <div class="modal-backdrop" id="modal-activity-details">
+    <div class="modal-content" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Activity Performance & Trends</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-activity-details">&times;</button>
+      </div>
+      <div id="activity-details-content">
+        <!-- Rendered dynamically by analytics.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Custom Activity Modal -->
+  <div class="modal-backdrop" id="modal-add-activity">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Custom Activity</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-add-act">&times;</button>
+      </div>
+      <form id="form-add-activity">
+        <div class="form-group">
+          <label class="form-label" for="custom-act-name">Activity Name</label>
+          <input type="text" id="custom-act-name" class="form-input" placeholder="e.g. Meditation, Coding, Reading" required maxlength="25">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="custom-act-ico">Icon (Emoji)</label>
+            <input type="text" id="custom-act-ico" class="form-input" placeholder="🧘" value="🧘" maxlength="4" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="custom-act-unit">Unit</label>
+            <input type="text" id="custom-act-unit" class="form-input" placeholder="min, pages, reps" value="min" maxlength="10">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="custom-act-step">Step Amount</label>
+            <input type="number" id="custom-act-step" class="form-input" value="5" min="0.1" step="any" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="custom-act-priority">Priority Level</label>
+            <select id="custom-act-priority" class="form-input" style="cursor: pointer;">
+              <option value="high">🔥 High Priority (1.35x XP)</option>
+              <option value="med" selected>⚡ Medium Priority (1.0x XP)</option>
+              <option value="low">🌱 Low Priority (0.8x XP)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="custom-act-chips">Quick Increment Chips (comma separated)</label>
+          <input type="text" id="custom-act-chips" class="form-input" placeholder="10, 20, 30, 45" value="10, 20, 30, 45">
+        </div>
+
+        <button type="submit" class="btn-primary-block">Add to Daily Log</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bad Habit Quitter Modal -->
+  <div class="modal-backdrop" id="modal-habit-quitter">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🚭 Bad Habit Quitter</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-quitter">&times;</button>
+      </div>
+
+      <div class="habit-quitter-list" id="habit-quitter-list">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Add Habit Form -->
+      <form id="form-add-quitter" style="background: rgba(14, 14, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
+        <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 8px;">➕ Quit a New Bad Habit</div>
+        <div style="display: grid; grid-template-columns: 48px 1fr; gap: 8px; margin-bottom: 8px;">
+          <input type="text" id="quit-new-ico" class="form-input" placeholder="🚭" value="🚭" maxlength="4" style="text-align: center;">
+          <input type="text" id="quit-new-name" class="form-input" placeholder="e.g. Vaping, Late Night Snacks, Gaming binge" required maxlength="30">
+        </div>
+        <button type="submit" class="btn-log" style="width: 100%;">Start Clean Streak</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Life Achievements (Hall of Fame) Modal -->
+  <div class="modal-backdrop" id="modal-achievements">
+    <div class="modal-content" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🏆 Life Hall of Fame</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-achievements">&times;</button>
+      </div>
+
+      <!-- Add Achievement Form -->
+      <form id="form-add-achievement" style="background: rgba(18, 14, 24, 0.8); border: 1px solid rgba(255, 201, 77, 0.3); border-radius: var(--radius-md); padding: 14px; margin-bottom: 20px;">
+        <div style="font-size: 12px; font-weight: 800; color: var(--gold); margin-bottom: 8px;">🏅 Record a Life Achievement (+100 XP)</div>
+        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 8px; margin-bottom: 8px;">
+          <input type="text" id="ach-title" class="form-input" placeholder="Achievement Title (e.g. Cleared JEE / Ran Marathon)" required maxlength="40">
+          <select id="ach-category" class="form-input" style="cursor: pointer;">
+            <option value="Academic">🎓 Academic</option>
+            <option value="Fitness">🏋️ Fitness</option>
+            <option value="Career">💼 Career</option>
+            <option value="Personal">🌟 Personal</option>
+          </select>
+        </div>
+        <input type="text" id="ach-desc" class="form-input" placeholder="Short description or notes..." maxlength="100" style="margin-bottom: 8px;">
+        <button type="submit" class="btn-primary-block" style="background: linear-gradient(135deg, #f59e0b, #d97706); margin-top: 0; padding: 8px;">
+          Add to Hall of Fame
+        </button>
+      </form>
+
+      <div class="achievements-grid" id="achievements-list" style="max-height: 280px; overflow-y: auto;">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Adventurer's Guide Modal -->
+  <div class="modal-backdrop" id="modal-guide">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📖 Adventurer's Guide (How to Play)</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-guide">&times;</button>
+      </div>
+
+      <div class="guide-tabs-nav">
+        <button type="button" class="guide-tab-btn active" data-tab="rules">Game Rules & XP</button>
+        <button type="button" class="guide-tab-btn" data-tab="evolution">Hero Evolution</button>
+        <button type="button" class="guide-tab-btn" data-tab="penalties">Shields & Decay</button>
+        <button type="button" class="guide-tab-btn" data-tab="raids">Quests & Bosses</button>
+      </div>
+
+      <div class="guide-content-panel active" id="guide-tab-rules">
+        <div class="guide-card-item">
+          <div class="guide-card-title">⚡ How Experience (XP) & Levels Work</div>
+          <p>Every time you log a productive real-life habit, you earn XP. High-priority habits (like Studies & Workouts) give a <strong>1.35x XP bonus</strong>! As XP fills your meter, you level up, unlocking higher ranks from <em>Rookie</em> to <em>Legend</em>.</p>
+        </div>
+        <div class="guide-card-item">
+          <div class="guide-card-title">🔥 Priorities & Habit Multipliers</div>
+          <p>Tag habits as <strong>High (🔥)</strong>, <strong>Medium (⚡)</strong>, or <strong>Low (🌱)</strong>. Click any activity card to inspect last 7 days of logs, view trend percentages, and change priority.</p>
+        </div>
+      </div>
+
+      <div class="guide-content-panel" id="guide-tab-evolution">
+        <div class="guide-card-item">
+          <div class="guide-card-title">🧬 Real-Time Morphology</div>
+          <p>Your pixel hero transforms based on your daily actions:</p>
+          <ul style="margin-left: 18px; margin-top: 6px;">
+            <li><strong>Workouts & Running:</strong> Increases Muscle Tone, sculpts abdominal lines, and broadens shoulders (<em>Toned</em>, <em>Athletic</em>, <em>Shredded</em>).</li>
+            <li><strong>Skipping Days:</strong> Muscles gradually shrink into a <em>Soft</em> or <em>Frail</em> build.</li>
+            <li><strong>Junk Food:</strong> Adds body fat and expands the hero's belly (<em>Heavy</em>).</li>
+          </ul>
+        </div>
+        <div class="guide-card-item">
+          <div class="guide-card-title">👑 Gear Unlocks</div>
+          <p>As you level up, gear equips automatically onto your sprite: Sweatband at Lv2, Fire Sneakers at Lv3, Wristbands at Lv5, Hero Cape at Lv7, Flame Aura at Lv10, and Golden Crown at Lv15!</p>
+        </div>
+      </div>
+
+      <div class="guide-content-panel" id="guide-tab-penalties">
+        <div class="guide-card-item">
+          <div class="guide-card-title">🛡️ Daily Decay & Shields</div>
+          <p>If you don't log any activities during a day, your score suffers from <strong>Inactivity Decay</strong> and streaks drop. However, each level-up grants a <strong>Shield (🛡️)</strong> (max 3) which automatically sacrifices itself to save your XP and streak!</p>
+        </div>
+        <div class="guide-card-item">
+          <div class="guide-card-title">🔄 Penalty Refund</div>
+          <p>Forgot to log yesterday? Just backfill your activity, and the system automatically restores your lost XP or refund your shield!</p>
+        </div>
+      </div>
+
+      <div class="guide-content-panel" id="guide-tab-raids">
+        <div class="guide-card-item">
+          <div class="guide-card-title">👾 Weekly Nemesis Boss Raids</div>
+          <p>Every week, a monstrous boss (like <em>Procrastination Slime</em> or <em>Couch Golem</em>) attacks! Every point of XP you earn deals direct damage to the boss's HP. Defeating the boss grants massive bonus XP.</p>
+        </div>
+        <div class="guide-card-item">
+          <div class="guide-card-title">📜 Daily Quests & Radar Balance</div>
+          <p>Complete at least 5 of 7 daily quests to trigger the Daily Sweep +50 XP bonus. Keep an eye on your 7-axis glowing Radar Chart to maintain equilibrium across Strength, Stamina, Focus, Knowledge, Recovery, Fuel, and Reflection.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/util.js"></script>
+  <script src="js/sprite.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/radar.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
